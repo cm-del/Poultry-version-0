@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="نظام إدارة مزارع الدواجن الشامل - متابعة 3 عنابر">
+    <meta name="theme-color" content="#2c3e50">
+    <title>نظام إدارة مزارع الدواجن الشامل</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="header">
+    <h1>🐔 نظام إدارة مزارع الدواجن الشامل</h1>
+    <p>متابعة 3 عنابر | حساب FCR | التهوية | الاستهلاك بالشيكارة | النفوق</p>
+</div>
+
+<!-- إعدادات الدورة -->
+<div class="card">
+    <h3>⚙️ إعدادات الدورة</h3>
+    <div class="bag-info">
+        📦 <strong>ملاحظة:</strong> كل شيكارة علف = 50 كجم | جميع مدخلات العلف بالشيكارة
+    </div>
+    <div class="setup-grid">
+        <div>
+            <label>📅 تاريخ بداية الدورة</label>
+            <input type="date" id="startDate" onchange="saveSetup(); calculateAll();">
+        </div>
+        <div>
+            <label>🐣 عدد الكتاكيت (لكل عنبر)</label>
+            <input type="number" id="chickCount" placeholder="10000" min="1" oninput="saveSetup(); calculateAll();">
+        </div>
+        <div>
+            <label>🌾 مخزن العلف (شيكارة)</label>
+            <input type="number" id="feedStorage" placeholder="1000" min="0" oninput="saveSetup(); calculateAll();">
+        </div>
+        <div>
+            <label>⚖️ متوسط الوزن الحالي (كجم)</label>
+            <input type="number" id="avgWeight" step="0.01" placeholder="0.00" min="0" oninput="saveSetup(); calculateAll();">
+        </div>
+    </div>
+    <div style="text-align:center; margin-top:10px;">
+        <span>عمر الدورة الحالي: </span>
+        <span class="age-badge" id="currentAge">0 يوم</span>
+    </div>
+</div>
+
+<!-- تبويبات العنابر -->
+<div class="barn-tabs">
+    <button class="barn-tab active" onclick="switchBarn(0)">🏠 عنبر 1</button>
+    <button class="barn-tab" onclick="switchBarn(1)">🏠 عنبر 2</button>
+    <button class="barn-tab" onclick="switchBarn(2)">🏠 عنبر 3</button>
+</div>
+
+<!-- الإحصائيات -->
+<div class="card">
+    <h3>📊 إحصائيات العنبر الحالي</h3>
+    <div class="stats-grid">
+        <div class="stat-box danger">
+            <div class="value" id="totalDead">0</div>
+            <div class="label">إجمالي النافق (طائر)</div>
+        </div>
+        <div class="stat-box warning">
+            <div class="value" id="mortalityRate">0%</div>
+            <div class="label">نسبة النفوق</div>
+        </div>
+        <div class="stat-box success">
+            <div class="value" id="totalBags">0</div>
+            <div class="label">إجمالي العلف (شيكارة)</div>
+        </div>
+        <div class="stat-box info">
+            <div class="value" id="totalKg">0</div>
+            <div class="label">إجمالي العلف (كجم)</div>
+        </div>
+        <div class="stat-box info">
+            <div class="value" id="fcrValue">0.00</div>
+            <div class="label">معامل التحويل FCR</div>
+        </div>
+        <div class="stat-box success">
+            <div class="value" id="liveBirds">0</div>
+            <div class="label">الطيور الحية</div>
+        </div>
+        <div class="stat-box warning">
+            <div class="value" id="remainingBags">0</div>
+            <div class="label">العلف المتبقي (شيكارة)</div>
+        </div>
+        <div class="stat-box info">
+            <div class="value" id="dailyFeedPerBird">0</div>
+            <div class="label">استهلاك/طائر/يوم (جم)</div>
+        </div>
+        <div class="stat-box success">
+            <div class="value" id="ventilationRate">0</div>
+            <div class="label">التهوية (CFM)</div>
+        </div>
+    </div>
+    <div style="margin-top:15px;">
+        <div style="display:flex; justify-content:space-between; font-size:0.85em;">
+            <span>نسبة استهلاك العلف من المخزن</span>
+            <span id="feedPercent">0%</span>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="feedProgressBar" style="width:0%"></div>
+        </div>
+    </div>
+    <div style="margin-top:10px;">
+        <div style="display:flex; justify-content:space-between; font-size:0.85em;">
+            <span>نسبة تقدم الدورة (45 يوم)</span>
+            <span id="cyclePercent">0%</span>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="cycleProgressBar" style="width:0%; background:var(--info)"></div>
+        </div>
+    </div>
+</div>
+
+<!-- المعادلات والصيغ -->
+<div class="formulas-card">
+    <h4>📐 المعادلات والصيغ المستخدمة</h4>
+    <div class="formula-item">
+        <strong>تحويل الشيكارة إلى كجم:</strong><br>
+        <code>إجمالي كجم = عدد الشيكارات × 50</code>
+    </div>
+    <div class="formula-item">
+        <strong>معامل التحويل (FCR):</strong><br>
+        <code>FCR = إجمالي العلف (كجم) ÷ (الطيور الحية × متوسط الوزن كجم)</code>
+    </div>
+    <div class="formula-item">
+        <strong>نسبة النفوق:</strong><br>
+        <code>نسبة النفوق % = (إجمالي النافق ÷ عدد الكتاكيت الابتدائي) × 100</code>
+    </div>
+    <div class="formula-item">
+        <strong>التهوية (CFM):</strong><br>
+        <code>CFM = الطيور الحية × معامل التهوية حسب العمر</code><br>
+        <small>الأيام 1-7: 0.5 | 8-14: 1.0 | 15-21: 1.5 | 22-28: 2.0 | 29-35: 2.5 | 36+: 3.0 CFM/طائر</small>
+    </div>
+    <div class="formula-item">
+        <strong>استهلاك الطائر اليومي من العلف (جم):</strong><br>
+        <code>الاستهلاك اليومي/طائر = (إجمالي كجم × 1000) ÷ (الطيور الحية × عدد الأيام)</code>
+    </div>
+    <div class="formula-item">
+        <strong>العلف المتوقع تراكمياً (شيكارة):</strong><br>
+        <code>الشيكارات المتوقعة = (الطيور الحية × الاستهلاك المعياري بالجرام) ÷ 50000</code>
+    </div>
+    <div class="formula-item">
+        <strong>الوزن المتوقع المعياري (جم):</strong><br>
+        <small>يوم 7 = 300 | يوم 14 = 700 | يوم 21 = 1300 | يوم 28 = 2050 | يوم 35 = 2800 | يوم 42 = 3500</small>
+    </div>
+</div>
+
+<!-- جدول الدورة -->
+<div class="card">
+    <h3>📋 جدول الدورة اليومية - <span id="barnTitle">عنبر 1</span></h3>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>اليوم</th>
+                    <th>الحرارة °C</th>
+                    <th>الرطوبة</th>
+                    <th>الإظلام</th>
+                    <th>نوع العلف</th>
+                    <th>البرنامج الطبي</th>
+                    <th>النافق (طائر)</th>
+                    <th>العلف (شيكارة)</th>
+                    <th>الوزن (جم)</th>
+                    <th>العلف المتوقع/طائر (جم)</th>
+                    <th>الوزن المتوقع (جم)</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- أزرار -->
+<div style="text-align:center; margin: 20px 0;">
+    <button class="btn-reset" onclick="resetData()">🗑️ مسح جميع البيانات</button>
+    <button class="btn-save" onclick="exportData()">📥 تصدير البيانات</button>
+</div>
+
+<!-- Scripts -->
+<script src="js/data.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/calculations.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
